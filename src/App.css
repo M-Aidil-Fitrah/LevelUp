@@ -1443,18 +1443,18 @@ select:focus {
   cursor: pointer;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
-  border-color: #a3e635 !important; /* lime-400 - hijau stabilo */
+  border-color: #000000 !important; /* lime-400 - hijau stabilo */
 }
 
 .approach-card-swap .absolute:hover {
   transform: translate(-50%, -50%) scale(1.02) !important;
-  box-shadow: 0 20px 40px rgba(163, 230, 53, 0.25); /* lime shadow */
-  border-color: #84cc16 !important; /* lime-500 - hijau stabilo lebih gelap */
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25); /* black shadow */
+  border-color: #000000 !important; /* black border */
 }
 
 /* Icon color consistency */
 .approach-card-swap .card-icon {
-  color: #84cc16 !important; /* lime-500 - hijau stabilo untuk icon */
+  color: #000000 !important; /* lime-500 - hijau stabilo untuk icon */
 }
 
 /* Card icon styling */
