@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 
 interface NavbarProps {
   className?: string;
+  controlledTransform?: number;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
+const Navbar: React.FC<NavbarProps> = ({ className = '', controlledTransform }) => {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
@@ -15,18 +16,22 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
       
       if (heroSection) {
         const heroHeight = heroSection.offsetHeight;
-        const isCurrentlyInHero = currentScrollY < heroHeight - 50; // Small buffer
+        const isCurrentlyInHero = currentScrollY < heroHeight - 100;
         
-        if (isCurrentlyInHero) {
-          // Always show navbar when in hero section
+        // If controlled by Hero component (in hero section)
+        if (controlledTransform !== undefined && isCurrentlyInHero) {
           setIsVisible(true);
-        } else {
-          // Outside hero section: hide immediately when scrolling down, show when scrolling up
-          if (currentScrollY > lastScrollY) {
-            // Scrolling down - hide navbar immediately
+        } 
+        // If not controlled (outside hero or hero not controlling)
+        else if (controlledTransform === undefined || !isCurrentlyInHero) {
+          if (currentScrollY <= 100) {
+            // At top, always show
+            setIsVisible(true);
+          } else if (currentScrollY > lastScrollY + 5) {
+            // Scrolling down with threshold - hide navbar
             setIsVisible(false);
-          } else if (currentScrollY < lastScrollY) {
-            // Scrolling up - show navbar immediately
+          } else if (currentScrollY < lastScrollY - 5) {
+            // Scrolling up with threshold - show navbar
             setIsVisible(true);
           }
         }
@@ -47,7 +52,7 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
     }, 100);
     
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
+  }, [lastScrollY, controlledTransform]);
 
   const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
     e.preventDefault();
@@ -61,6 +66,11 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
   return (
     <nav 
       className={`modern-navbar ${isVisible ? 'navbar-visible' : 'navbar-hidden'} ${className}`}
+      style={{ 
+        transform: controlledTransform !== undefined 
+          ? `translateX(-50%) translateY(${controlledTransform}px)` 
+          : undefined
+      }}
       role="navigation" 
       aria-label="Main navigation"
     >
