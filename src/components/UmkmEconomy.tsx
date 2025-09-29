@@ -107,7 +107,6 @@ const UmkmEconomy: React.FC = () => {
             className="umkm-economy-badge"
             variants={itemVariants}
           >
-            <span className="badge-icon">🇮🇩</span>
             <span className="badge-text">Ekonomi Indonesia</span>
           </motion.div>
           <motion.h2 
