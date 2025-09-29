@@ -1,31 +1,163 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import CardSwap, { Card } from './CardSwap';
 
 const About: React.FC = () => {
+  // Animation variants for text elements
+  const textVariants = {
+    hidden: { 
+      opacity: 0, 
+      y: 20 
+    },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: {
+        duration: 0.6,
+        ease: [0.4, 0, 0.2, 1] as const
+      }
+    }
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2,
+        delayChildren: 0.1
+      }
+    }
+  };
+
+  const wordVariants = {
+    hidden: { 
+      opacity: 0, 
+      y: 10 
+    },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: i * 0.05,
+        duration: 0.4,
+        ease: [0.4, 0, 0.2, 1] as const
+      }
+    })
+  };
+
   const features = [
     {
-      title: "Marketplace UMKM",
-      description: "Platform digital untuk UMKM menjangkau lebih banyak pelanggan dan meningkatkan penjualan."
+      title: "Marketplace UMKM Terpercaya",
+      description: "Toko online gratis untuk UMKM Indonesia dengan sistem pembayaran aman dan integrasi dengan semua bank lokal."
     },
     {
-      title: "Hyperlocal Shopping", 
-      description: "Pembelian berbasis jarak terdekat untuk mendukung ekonomi lokal dan pengiriman cepat."
+      title: "Hyperlocal Community", 
+      description: "Menghubungkan UMKM dengan pelanggan di sekitar untuk mendorong ekonomi lokal dan mengurangi ongkos kirim."
     },
     {
-      title: "Chatbot AI",
-      description: "Asisten pintar yang membantu pelanggan 24/7 dengan respon yang akurat dan personal."
+      title: "AI Bisnis Assistant",
+      description: "Chatbot cerdas berbahasa Indonesia yang membantu analisis bisnis, customer service, dan strategi marketing."
     }
   ];
+
+  // Helper function to split text into words for animation
+  const AnimatedText = ({ text, className }: { 
+    text: string; 
+    className?: string;
+  }) => {
+    const words = text.split(' ');
+    return (
+      <motion.div className={className} variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+        {words.map((word, i) => (
+          <motion.span
+            key={i}
+            custom={i}
+            variants={wordVariants}
+            style={{ 
+              display: 'inline-block', 
+              marginRight: '0.25em'
+            }}
+          >
+            {word}
+          </motion.span>
+        ))}
+      </motion.div>
+    );
+  };
+
+  // Special component for the main title with LevelUp highlighted
+  const AnimatedTitle = () => {
+    const titleParts = [
+      { text: 'LevelUp', isHighlight: true },
+      { text: 'Solusi', isHighlight: false },
+      { text: 'Digital', isHighlight: false },
+      { text: 'untuk', isHighlight: false },
+      { text: 'UMKM', isHighlight: false }
+    ];
+
+    return (
+      <motion.div className="approach-features-title" variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+        {titleParts.map((part, i) => (
+          <motion.span
+            key={i}
+            custom={i}
+            variants={wordVariants}
+            style={{ 
+              display: 'inline-block', 
+              marginRight: '0.25em',
+              ...(part.isHighlight && {
+                background: 'linear-gradient(135deg, #ccff00, #a6d900)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                fontWeight: '700'
+              })
+            }}
+          >
+            {part.text}
+          </motion.span>
+        ))}
+      </motion.div>
+    );
+  };
 
   return (
     <section className="about-section" id="about">
       <div className="about-container">
-        <div className="approach-content-wrapper">
-          <div className="approach-title-section">
-            <h3 className="approach-features-title">Fitur Unggulan</h3>
-            <p className="approach-features-subtitle">Solusi terdepan untuk mengembangkan bisnis Anda</p>
-          </div>
-          <div className="approach-card-swap">
+        <motion.div 
+          className="approach-content-wrapper"
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+        >
+          <motion.div 
+            className="approach-title-section"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={containerVariants}
+          >
+            <AnimatedTitle />
+            <motion.div variants={textVariants}>
+              <AnimatedText 
+                text="Teknologi canggih yang mudah diakses untuk semua pelaku UMKM Indonesia" 
+                className="approach-features-subtitle"
+              />
+            </motion.div>
+          </motion.div>
+          <motion.div 
+            className="approach-card-swap"
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ 
+              duration: 0.8, 
+              delay: 0.6,
+              ease: [0.4, 0, 0.2, 1] 
+            }}
+          >
             <CardSwap
               width={420}
               height={280}
@@ -61,20 +193,10 @@ const About: React.FC = () => {
                 </div>
               </Card>
             </CardSwap>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
-        <div className="about-content">
-          <div className="content-text">
-            <h3>Why Choose LevelUp?</h3>
-            <p>
-              We're not just developers—we're digital craftspeople who understand that behind every great product is thoughtful planning, clean execution, and genuine care for the user experience.
-            </p>
-            <p>
-              Our team combines technical expertise with design thinking to create solutions that don't just work, but work beautifully.
-            </p>
-          </div>
-        </div>
+
       </div>
     </section>
   );

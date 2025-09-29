@@ -3,6 +3,8 @@ import ScrollProgress from './components/ScrollProgress'
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
 import About from './components/About'
+import WhyLevelUp from './components/WhyLevelUp'
+import UmkmEconomy from './components/UmkmEconomy'
 import Services from './components/Services'
 import Contact from './components/Contact'
 import Footer from './components/Footer'
@@ -21,6 +23,8 @@ function App() {
         onHeroActiveChange={setIsHeroActive}
       />
       <About />
+      <WhyLevelUp />
+      <UmkmEconomy />
       <Services />
       <Contact />
       <Footer />

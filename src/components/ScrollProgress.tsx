@@ -11,6 +11,13 @@ const ScrollProgress: React.FC<ScrollProgressProps> = ({ className = '' }) => {
     const updateScrollProgress = () => {
       const scrollTop = window.scrollY;
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      
+      // Ensure we have valid values to prevent NaN
+      if (docHeight <= 0) {
+        setScrollProgress(0);
+        return;
+      }
+      
       const progress = (scrollTop / docHeight) * 100;
       setScrollProgress(Math.min(100, Math.max(0, progress)));
     };
@@ -27,11 +34,14 @@ const ScrollProgress: React.FC<ScrollProgressProps> = ({ className = '' }) => {
       }
     };
 
+    // Listen to both scroll and resize events for better accuracy
     window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true });
     updateScrollProgress(); // Initial calculation
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
     };
   }, []);
 

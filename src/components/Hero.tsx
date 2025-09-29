@@ -11,6 +11,9 @@ const Hero: React.FC<HeroProps> = ({ onNavbarTransformChange, onHeroActiveChange
   const scrollAccumulator = useRef(0);
   const hasUnlocked = useRef(false);
   const unlockTime = useRef(0);
+  const lastScrollPosition = useRef(0);
+  const touchStartY = useRef(0);
+  const lastWheelTime = useRef(0);
 
   const handleJoinToday = () => {
     // Simple native smooth scroll
@@ -24,7 +27,6 @@ const Hero: React.FC<HeroProps> = ({ onNavbarTransformChange, onHeroActiveChange
   useEffect(() => {
     if (isHeroLocked) {
       // Store current scroll and prevent scrolling with overflow hidden
-      const scrollY = window.scrollY;
       document.body.style.overflow = 'hidden';
       document.body.style.paddingRight = '0px'; // No scrollbar compensation needed
       window.scrollTo(0, 0);
@@ -47,14 +49,22 @@ const Hero: React.FC<HeroProps> = ({ onNavbarTransformChange, onHeroActiveChange
       // Only prevent default if we're still in hero lock mode
       e.preventDefault();
       
-      // Accumulate scroll delta (both directions)
-      scrollAccumulator.current += e.deltaY;
+      const now = Date.now();
+      lastWheelTime.current = now;
       
-      // Clamp to prevent negative values, but allow reverse scrolling
+      // Handle scrolling direction
+      if (e.deltaY < 0) {
+        // Scrolling up - allow rewinding the animation
+        const rewindSpeed = Math.abs(e.deltaY) * 1.2; // Rewind speed
+        scrollAccumulator.current = Math.max(0, scrollAccumulator.current - rewindSpeed);
+      } else {
+        // Scrolling down - continue animation
+        scrollAccumulator.current += e.deltaY;
+      }
+      
+      // Clamp to prevent negative values
       if (scrollAccumulator.current < 0) {
         scrollAccumulator.current = 0;
-        // Re-enable hero lock if we scroll back to beginning
-        setIsHeroLocked(true);
       }
 
       const maxScroll = 800; // Total scroll needed to complete all animations
@@ -89,36 +99,99 @@ const Hero: React.FC<HeroProps> = ({ onNavbarTransformChange, onHeroActiveChange
         // Release navbar control immediately
         onHeroActiveChange?.(false);
         onNavbarTransformChange?.(undefined);
+        
+        // Ensure scroll is smooth after unlock
+        setTimeout(() => {
+          document.body.style.overflow = '';
+          document.body.style.paddingRight = '';
+        }, 100);
       }
     };
 
     const handleScroll = () => {
-      // Only handle re-engagement after cooldown period
       const now = Date.now();
-      if (!isHeroLocked && hasUnlocked.current && (now - unlockTime.current > 2000)) {
-        const scrollY = window.scrollY;
-        if (scrollY <= 5) { // Very strict threshold
-          // Only re-engage if user manually scrolled to absolute top after cooldown
-          hasUnlocked.current = false;
-          unlockTime.current = 0;
-          setIsHeroLocked(true);
-          scrollAccumulator.current = 600;
+      const scrollY = window.scrollY;
+      
+      // Handle re-engagement for unlocked hero (completed animation)
+      if (!isHeroLocked && hasUnlocked.current && (now - unlockTime.current > 800)) {
+        // Check if user scrolled to the top
+        if (scrollY <= 30) { // More forgiving threshold
+          // Also check if user was scrolling upward
+          const wasScrollingUp = scrollY < lastScrollPosition.current;
           
-          onHeroActiveChange?.(true);
-          onNavbarTransformChange?.(-100);
-          setContentOpacity(0);
+          if (wasScrollingUp || scrollY === 0) {
+            // Re-engage hero section
+            hasUnlocked.current = false;
+            unlockTime.current = 0;
+            setIsHeroLocked(true);
+            scrollAccumulator.current = 600;
+            
+            onHeroActiveChange?.(true);
+            onNavbarTransformChange?.(-100);
+            setContentOpacity(0);
+          }
         }
       }
-    };    // Add wheel listener for scroll accumulation
+      
+      // Handle case where user scrolls to top while hero is still locked (mid-animation)
+      if (isHeroLocked && !hasUnlocked.current && scrollY <= 10) {
+        // Reset animation to beginning if user somehow scrolled to top during animation
+        scrollAccumulator.current = 0;
+        setContentOpacity(1);
+        onNavbarTransformChange?.(0);
+      }
+      
+      lastScrollPosition.current = scrollY;
+    };    const handleKeyDown = (e: KeyboardEvent) => {
+      // Handle keyboard navigation that might bypass wheel events
+      if (isHeroLocked && (e.key === 'Home' || e.key === 'PageUp' || e.key === 'ArrowUp')) {
+        if (scrollAccumulator.current > 0) {
+          // Reset to beginning if user tries to navigate up during animation
+          scrollAccumulator.current = 0;
+          setContentOpacity(1);
+          onNavbarTransformChange?.(0);
+        }
+      }
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (isHeroLocked) {
+        touchStartY.current = e.touches[0].clientY;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isHeroLocked) return;
+      
+      const currentY = e.touches[0].clientY;
+      const deltaY = touchStartY.current - currentY;
+      
+      // Simulate wheel event for touch
+      if (Math.abs(deltaY) > 10) { // Minimum threshold for touch sensitivity
+        const syntheticWheelEvent = {
+          deltaY: deltaY * 2, // Amplify touch sensitivity
+          preventDefault: () => e.preventDefault()
+        } as WheelEvent;
+        
+        handleWheel(syntheticWheelEvent);
+        touchStartY.current = currentY;
+      }
+    };
+
+    // Add wheel listener for scroll accumulation
     window.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('keydown', handleKeyDown, { passive: true });
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
     
-    // Only add scroll listener when unlocked for re-engagement
-    if (!isHeroLocked) {
-      window.addEventListener('scroll', handleScroll, { passive: true });
-    }
+    // Always add scroll listener for better detection
+    window.addEventListener('scroll', handleScroll, { passive: true });
 
     return () => {
       window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('scroll', handleScroll);
     };
   }, [isHeroLocked]);
@@ -140,13 +213,13 @@ const Hero: React.FC<HeroProps> = ({ onNavbarTransformChange, onHeroActiveChange
             style={{ opacity: contentOpacity }}
           >
             <h1 className="hero-title">
-              Unlock your local<br />
-              business potential
+              Majukan UMKM<br />
+              Indonesia Bersama
             </h1>
             
             <p className="hero-description">
-              Empower 1,000+ local SMEs. Connect with hyperlocal marketplace.<br />
-              AI-powered insights. All in one platform
+              Platform digital all-in-one untuk 65+ juta UMKM Indonesia.<br />
+              Marketplace hyperlocal, AI chatbot, dan solusi bisnis terintegrasi.
             </p>
 
             <div className="hero-cta-section">
@@ -155,13 +228,13 @@ const Hero: React.FC<HeroProps> = ({ onNavbarTransformChange, onHeroActiveChange
                 onClick={handleJoinToday}
                 aria-describedby="cta-badge"
               >
-                Join Today
+                Bergabung Sekarang
                 <span className="cta-arrow">→</span>
               </button>
               
               <div className="hero-eligibility">
-                <span className="eligibility-icon">✓</span>
-                <span id="cta-badge" className="eligibility-text">Free for SMEs</span>
+                <span className="eligibility-icon">🇮🇩</span>
+                <span id="cta-badge" className="eligibility-text">Gratis untuk UMKM</span>
               </div>
             </div>
           </div>
